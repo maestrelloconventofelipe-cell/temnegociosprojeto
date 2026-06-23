@@ -1,0 +1,155 @@
+/* Tailwind utilities — sem @tailwind base para não conflitar com Bootstrap */
+@tailwind components;
+@tailwind utilities;
+
+/* ── Dark theme ─────────────────────────────────────────────────── */
+body.dark-theme { background-color: #0f172a !important; color: #f8fafc !important; }
+
+/* Layout / fundo */
+.dark-theme .bg-light-base  { background-color: #0f172a !important; }
+.dark-theme .bg-white        { background-color: #1e293b !important; }
+.dark-theme .bg-light        { background-color: #273347 !important; }
+.dark-theme .border          { border-color: #334155 !important; }
+.dark-theme .border-bottom   { border-bottom-color: #334155 !important; }
+.dark-theme .shadow-sm       { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
+
+/* Cards */
+.dark-theme .card, .dark-theme .custom-card {
+  background-color: #1e293b !important; border-color: #334155 !important;
+}
+.dark-theme .card-header {
+  background-color: #273347 !important; border-bottom-color: #334155 !important;
+}
+
+/* Tipografia */
+.dark-theme .text-dark, .dark-theme .theme-text { color: #f1f5f9 !important; }
+.dark-theme .text-muted      { color: #94a3b8 !important; }
+.dark-theme .text-secondary  { color: #94a3b8 !important; }
+
+/* Formulários */
+.dark-theme input:not([type=file]),
+.dark-theme select,
+.dark-theme textarea,
+.dark-theme .form-control,
+.dark-theme .form-select,
+.dark-theme .input-group-text,
+.dark-theme .custom-input {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
+}
+.dark-theme input::placeholder,
+.dark-theme textarea::placeholder { color: #64748b !important; }
+.dark-theme .form-control:focus,
+.dark-theme .form-select:focus {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 0.2rem rgba(96,165,250,0.2) !important;
+}
+
+/* Tabelas */
+.dark-theme .table { color: #f8fafc !important; }
+.dark-theme .table-light {
+  background-color: #273347 !important; color: #f8fafc !important;
+}
+.dark-theme .table > :not(caption) > * > * {
+  background-color: transparent !important;
+  color: inherit !important;
+  border-bottom-color: #334155 !important;
+}
+.dark-theme .table-hover tbody tr:hover > * {
+  background-color: #273347 !important; color: #f8fafc !important;
+}
+.dark-theme .table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: #253045 !important;
+}
+
+/* Botões */
+.dark-theme .btn-light {
+  background-color: #334155 !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+.dark-theme .btn-light:hover {
+  background-color: #3d4f67 !important;
+}
+.dark-theme .btn-outline-secondary {
+  border-color: #475569 !important; color: #94a3b8 !important;
+}
+.dark-theme .btn-outline-secondary:hover {
+  background-color: #334155 !important; color: #f8fafc !important; border-color: #475569 !important;
+}
+.dark-theme .btn-close { filter: invert(1) grayscale(1); }
+
+/* Badges */
+.dark-theme .badge.bg-light  { background-color: #334155 !important; color: #f8fafc !important; }
+.dark-theme .badge.text-dark { color: #f8fafc !important; }
+
+/* Modais */
+.dark-theme .modal-content   { background-color: #1e293b !important; border-color: #334155 !important; }
+.dark-theme .modal-header    { border-bottom-color: #334155 !important; }
+.dark-theme .modal-footer    { border-top-color: #334155 !important; }
+
+/* Dropdowns */
+.dark-theme .dropdown-menu   { background-color: #1e293b !important; border-color: #334155 !important; }
+.dark-theme .dropdown-item   { color: #f1f5f9 !important; }
+.dark-theme .dropdown-item:hover, .dark-theme .dropdown-item:focus {
+  background-color: #334155 !important;
+}
+
+/* List group */
+.dark-theme .list-group-item {
+  background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important;
+}
+.dark-theme .list-group-item:hover { background-color: #273347 !important; }
+
+/* Nav tabs */
+.dark-theme .nav-tabs                  { border-bottom-color: #334155 !important; }
+.dark-theme .nav-tabs .nav-link        { color: #94a3b8 !important; }
+.dark-theme .nav-tabs .nav-link.active {
+  background-color: #1e293b !important;
+  border-color: #334155 #334155 #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+/* Alertas */
+.dark-theme .alert { border-color: #334155 !important; }
+
+/* Barra de pesquisa (topo do layout) */
+.dark-theme .search-bar-bg { background-color: #334155 !important; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────── */
+.sidebar-btn { transition: all 0.25s ease; border-left: 4px solid transparent; }
+.sidebar-btn:hover { background-color: rgba(255,255,255,0.08); transform: translateX(3px); }
+.sidebar-btn.active { background-color: rgba(255,255,255,0.13); border-left-color: #60a5fa !important; color: #fff !important; }
+.sidebar-container { transition: width 0.38s cubic-bezier(0.4,0,0.2,1); }
+
+@media (max-width: 768px) {
+  .sidebar-container { position: fixed; height: 100vh; z-index: 1050; }
+}
+
+/* ── Skeleton loader ─────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.75rem;
+}
+.dark-theme .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #273347 50%, #1e293b 75%);
+  background-size: 400% 100%;
+}
+@keyframes shimmer { 0% { background-position: -400% 0; } 100% { background-position: 400% 0; } }
+
+/* ── Custom scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.dark-theme ::-webkit-scrollbar-thumb { background: #475569; }
+
+/* ── Utility ────────────────────────────────────────────────────── */
+body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+.cursor-pointer { cursor: pointer; }
+.text-teal { color: #0d9488 !important; }
+.rounded-4 { border-radius: 1rem !important; }
+.bg-light-base { background-color: #f0f4f8; }
