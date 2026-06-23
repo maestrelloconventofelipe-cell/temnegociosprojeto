@@ -1,0 +1,20 @@
+# Variáveis de ambiente (nunca subir para o repositório)
+.env
+.env.local
+.env.*.local
+
+# Dependências
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Uploads locais
+src/uploads/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
