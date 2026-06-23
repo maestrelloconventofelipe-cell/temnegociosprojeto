@@ -1,5 +1,6 @@
 const db = require('../config/db')
 const { notificar } = require('../services/notificacoes.service')
+const { encriptarRegistro, decriptarRegistro, decriptarLista, criptografar } = require('../utils/cripto')
 
 async function listar(req, res) {
   const tenantId = req.tenant.id
@@ -10,14 +11,15 @@ async function listar(req, res) {
   if (tipo)   { sql += ` AND tipo=$${p.length+1}`;   p.push(tipo) }
   if (status) { sql += ` AND status=$${p.length+1}`; p.push(status) }
   if (busca)  {
-    sql += ` AND (nome ILIKE $${p.length+1} OR email ILIKE $${p.length+1} OR cpf ILIKE $${p.length+1})`
-    p.push(`%${busca}%`)
+    const cpfEnc = criptografar(busca.replace(/\D/g, ''))
+    sql += ` AND (nome ILIKE $${p.length+1} OR email ILIKE $${p.length+1} OR cpf = $${p.length+2})`
+    p.push(`%${busca}%`, cpfEnc)
   }
 
   sql += ' ORDER BY nome ASC'
   try {
     const { rows } = await db.query(sql, p)
-    res.json(rows)
+    res.json(decriptarLista('clientes', rows))
   } catch (err) {
     console.error(err)
     res.status(500).json({ erro: 'Erro ao listar clientes.', ...(process.env.NODE_ENV !== 'production' && { detalhe: err.message, codigo: err.code }) })
@@ -32,7 +34,7 @@ async function buscar(req, res) {
       [req.params.id, tenantId]
     )
     if (!rows.length) return res.status(404).json({ erro: 'Cliente não encontrado.' })
-    res.json(rows[0])
+    res.json(decriptarRegistro('clientes', rows[0]))
   } catch (err) {
     console.error(err)
     res.status(500).json({ erro: 'Erro ao buscar cliente.', ...(process.env.NODE_ENV !== 'production' && { detalhe: err.message, codigo: err.code }) })
@@ -44,6 +46,9 @@ async function criar(req, res) {
   const { nome, cpf, email, telefone, tipo, cep, endereco, cidade, estado, observacoes, status } = req.body
   if (!nome) return res.status(400).json({ erro: 'Nome é obrigatório.' })
 
+  const cpfNorm = cpf ? cpf.replace(/\D/g, '') || null : null
+  const { cpf: cpfEnc } = encriptarRegistro('clientes', { cpf: cpfNorm })
+
   try {
     const { rows } = await db.query(
       `INSERT INTO clientes
@@ -51,7 +56,7 @@ async function criar(req, res) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING id`,
       [
-        tenantId, nome, cpf||null, email||null, telefone||null,
+        tenantId, nome, cpfEnc, email||null, telefone||null,
         tipo||'comprador', cep||null, endereco||null, cidade||null,
         estado||null, observacoes||null, status||'ativo',
       ]
@@ -77,6 +82,9 @@ async function atualizar(req, res) {
   const { nome, cpf, email, telefone, tipo, cep, endereco, cidade, estado, observacoes, status } = req.body
   if (!nome) return res.status(400).json({ erro: 'Nome é obrigatório.' })
 
+  const cpfNorm = cpf ? cpf.replace(/\D/g, '') || null : null
+  const { cpf: cpfEnc } = encriptarRegistro('clientes', { cpf: cpfNorm })
+
   try {
     const result = await db.query(
       `UPDATE clientes SET
@@ -85,7 +93,7 @@ async function atualizar(req, res) {
          observacoes=$10, status=$11, updated_at=NOW()
        WHERE id=$12 AND tenant_id=$13`,
       [
-        nome, cpf||null, email||null, telefone||null, tipo||'comprador',
+        nome, cpfEnc, email||null, telefone||null, tipo||'comprador',
         cep||null, endereco||null, cidade||null, estado||null,
         observacoes||null, status||'ativo',
         req.params.id, tenantId,
