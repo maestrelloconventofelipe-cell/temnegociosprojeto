@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 import {
   LayoutDashboard, Home, Building, Users, DollarSign, Menu,
@@ -31,7 +31,6 @@ import Configuracoes    from './pages/Configuracoes'
 import Perfil           from './pages/Perfil'
 import RoyaltiesList    from './pages/royalties/RoyaltiesList'
 import AtividadeUsuarios from './pages/admin/AtividadeUsuarios'
-const TesteSupabase = lazy(() => import('./pages/TesteSupabase'))
 
 const ADMINS    = ['administrador_matriz','diretor_regional','franqueado']
 const FIN_ROLES = ['administrador_matriz','diretor_regional','franqueado','financeiro']
@@ -261,7 +260,6 @@ export default function App() {
             <Route path="/usuarios"      element={<Usuarios />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/perfil"         element={<Perfil />} />
-            <Route path="/teste-supabase" element={<Suspense fallback={null}><TesteSupabase /></Suspense>} />
           </Route>
           {/* Rotas que usam AppLayout próprio (Tailwind) — não aninhar dentro de BootstrapLayout */}
           <Route path="/royalties" element={<RequireAuth><RoyaltiesList /></RequireAuth>} />
