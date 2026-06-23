@@ -8,6 +8,7 @@ import {
   ClipboardCheck, Folder, BarChart2, Settings,
 } from 'lucide-react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ToastProvider } from './contexts/ToastContext'
 import Notificacoes from './components/Notificacoes'
 import ChatBot from './components/ChatBot'
 
@@ -237,6 +238,7 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
+        <ToastProvider>
         <Routes>
           <Route path="/login"  element={<Login />} />
           <Route element={<RequireAuth><BootstrapLayout /></RequireAuth>}>
@@ -266,6 +268,7 @@ export default function App() {
           <Route path="/atividade" element={<RequireAuth><AtividadeUsuarios /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   )
