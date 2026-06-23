@@ -40,6 +40,31 @@ esgotado (o `dashboard.controller.js` usa `Promise.all` com 7 queries simultâne
 | `usuarios` | `status` ('ativo'/'inativo') | `ativo` (boolean convertido) |
 | `tenants` | `status` ('ativa'/'bloqueada'/'suspensa'/'cancelada') | — |
 
+## schema.sql — AVISO CRÍTICO
+
+- `backend/schema.sql` **pode estar desatualizado** em relação ao banco real.
+- **Nunca** basear ALTER TABLE ou migrações no schema.sql.
+- Antes de qualquer mudança estrutural, sempre verificar o banco real:
+  ```sql
+  SELECT column_name, data_type, is_nullable, column_default
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = '<tabela>'
+  ORDER BY ordinal_position;
+  ```
+- Exemplos de divergências já encontradas:
+  - `clientes` no schema.sql tinha 8 colunas; banco real tinha colunas extras e nomes diferentes
+  - `imoveis` tinha `proprietario_id NOT NULL` no banco real, ausente no schema.sql
+  - `imoveis.finalidade` tem CHECK constraint `('venda','locacao')` não documentada no schema.sql
+
+## Criptografia de CPF
+
+- `clientes.cpf` é armazenado criptografado com AES-256-GCM (via `src/utils/cripto.js`).
+- CPF é normalizado antes de criptografar: somente dígitos (sem máscara).
+- Busca por CPF usa match exato no ciphertext determinístico — não ILIKE.
+- `ENCRYPTION_KEY` (64 chars hex) deve estar no `.env` — sem ela, qualquer operação de cliente falha.
+- CPFs legados em texto puro continuam funcionando: `descriptografar` retorna o valor como-está se não começa com `enc:`.
+- Tamanho da coluna: `VARCHAR(255)` — o ciphertext tem ~100 chars.
+
 ## CORS em produção
 
 - `server.js` lê `process.env.FRONTEND_URL` para definir a origem permitida pelo CORS.
