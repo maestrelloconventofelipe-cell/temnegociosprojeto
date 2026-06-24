@@ -23,6 +23,19 @@ function maskDocumento(v) {
   return maskCNPJ(raw)
 }
 
+function validarCPF(cpf) {
+  const n = cpf.replace(/\D/g, '')
+  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false
+  let s = 0
+  for (let i = 0; i < 9; i++) s += +n[i] * (10 - i)
+  let r = (s * 10) % 11; if (r >= 10) r = 0
+  if (r !== +n[9]) return false
+  s = 0
+  for (let i = 0; i < 10; i++) s += +n[i] * (11 - i)
+  r = (s * 10) % 11; if (r >= 10) r = 0
+  return r === +n[10]
+}
+
 function SectionCard({ icon: Icon, title, accent = '#2563eb', children }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-fade-up">
@@ -55,18 +68,23 @@ export default function ClienteForm() {
   const [carregando, setCarregando] = useState(isEdit)
   const [salvando, setSalvando] = useState(false)
   const [buscandoCNPJ, setBuscandoCNPJ] = useState(false)
+  const [buscandoCPF, setBuscandoCPF] = useState(false)
+  const [cpfStatus, setCpfStatus] = useState(null) // null | 'invalido' | 'encontrado' | 'novo'
   const [erro, setErro] = useState('')
   const navigate = useNavigate()
   const { toast } = useToast()
 
-  const { buscar: buscarCEP, buscando: buscandoCEP } = useBuscaCEP(({ logradouro, bairro, cidade, estado }) => {
-    setForm(prev => ({
-      ...prev,
-      endereco: logradouro ? (bairro ? `${logradouro} - ${bairro}` : logradouro) : prev.endereco,
-      cidade:   cidade || prev.cidade,
-      estado:   estado || prev.estado,
-    }))
-  })
+  const { buscar: buscarCEP, buscando: buscandoCEP } = useBuscaCEP(
+    ({ logradouro, bairro, cidade, estado }) => {
+      setForm(prev => ({
+        ...prev,
+        endereco: logradouro ? (bairro ? `${logradouro} - ${bairro}` : logradouro) : prev.endereco,
+        cidade:   cidade || prev.cidade,
+        estado:   estado || prev.estado,
+      }))
+    },
+    () => toast('CEP não encontrado. Verifique o número ou preencha o endereço manualmente.', 'warning')
+  )
 
   function set(field, value) { setForm(prev => ({ ...prev, [field]: value })) }
 
@@ -76,11 +94,49 @@ export default function ClienteForm() {
     if (mascarado.replace(/\D/g, '').length === 8) buscarCEP(mascarado)
   }
 
+  async function buscarCPFApi(limpo) {
+    setBuscandoCPF(true)
+    try {
+      const r = await api.get('/clientes', { params: { busca: limpo } })
+      const encontrado = r.data?.find(c => c.cpf?.replace(/\D/g, '') === limpo)
+      if (encontrado) {
+        setCpfStatus('encontrado')
+        setForm(prev => ({
+          ...prev,
+          nome:      encontrado.nome      || prev.nome,
+          email:     encontrado.email     || prev.email,
+          telefone:  encontrado.telefone  || prev.telefone,
+          tipo:      encontrado.tipo      || prev.tipo,
+          endereco:  encontrado.endereco  || prev.endereco,
+          cidade:    encontrado.cidade    || prev.cidade,
+          estado:    encontrado.estado    || prev.estado,
+          observacoes: encontrado.observacoes || prev.observacoes,
+        }))
+        toast('Dados do cliente preenchidos automaticamente.', 'success')
+      } else {
+        setCpfStatus('novo')
+      }
+    } catch {
+      setCpfStatus(null)
+    } finally {
+      setBuscandoCPF(false)
+    }
+  }
+
   function handleDocumento(valor) {
     const mascarado = maskDocumento(valor)
     set('cpf', mascarado)
+    setCpfStatus(null)
     const limpo = mascarado.replace(/\D/g, '')
-    if (limpo.length === 14) buscarCNPJApi(limpo)
+    if (limpo.length === 14) {
+      buscarCNPJApi(limpo)
+    } else if (limpo.length === 11) {
+      if (!validarCPF(limpo)) {
+        setCpfStatus('invalido')
+      } else {
+        buscarCPFApi(limpo)
+      }
+    }
   }
 
   async function buscarCNPJApi(limpo) {
@@ -141,6 +197,7 @@ export default function ClienteForm() {
   }
 
   const carregandoEndereco = buscandoCEP || buscandoCNPJ
+  const buscandoDoc = buscandoCNPJ || buscandoCPF
 
   if (carregando) return (
     <div className="space-y-4 max-w-xl">
@@ -203,17 +260,28 @@ export default function ClienteForm() {
               <div>
                 <label className="label flex items-center gap-2">
                   CPF / CNPJ
-                  {buscandoCNPJ && <span className="text-xs text-blue-400 font-normal animate-pulse">buscando…</span>}
+                  {buscandoDoc && <span className="text-xs text-blue-400 font-normal animate-pulse">buscando…</span>}
                 </label>
                 <InputIcon icon={Hash} accent="#2563eb">
                   <input
                     value={form.cpf}
                     onChange={e => handleDocumento(e.target.value)}
                     placeholder="000.000.000-00"
-                    className={`input ${buscandoCNPJ ? 'opacity-60' : ''}`}
+                    className={`input ${buscandoDoc ? 'opacity-60' : ''} ${cpfStatus === 'invalido' ? 'border-red-300 focus:border-red-400' : cpfStatus === 'encontrado' ? 'border-green-300 focus:border-green-400' : ''}`}
                   />
                 </InputIcon>
-                <p className="text-xs text-gray-400 mt-1">Digite o CNPJ para preenchimento automático</p>
+                {cpfStatus === 'invalido' && (
+                  <p className="text-xs text-red-500 mt-1">CPF inválido. Verifique os números digitados.</p>
+                )}
+                {cpfStatus === 'encontrado' && (
+                  <p className="text-xs text-green-600 mt-1">Cliente encontrado — dados preenchidos automaticamente.</p>
+                )}
+                {cpfStatus === 'novo' && (
+                  <p className="text-xs text-blue-500 mt-1">CPF válido. Nenhum cliente encontrado com este CPF.</p>
+                )}
+                {!cpfStatus && (
+                  <p className="text-xs text-gray-400 mt-1">CPF preenche dados do cliente · CNPJ busca empresa automaticamente</p>
+                )}
               </div>
               <div>
                 <label className="label">Telefone</label>

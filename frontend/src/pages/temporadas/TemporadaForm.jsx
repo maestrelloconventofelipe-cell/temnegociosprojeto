@@ -6,6 +6,7 @@ import {
   Palmtree, ChevronLeft, Save,
   Home, CalendarRange, Users, Percent,
   Moon, DollarSign, UserCheck, Info,
+  User, Mail, Phone,
 } from 'lucide-react'
 
 const STATUS_LIST = [
@@ -17,6 +18,7 @@ const STATUS_LIST = [
 
 const VAZIO = {
   imovel_id: '', cliente_id: '', corretor_id: '', corretor_captador_id: '',
+  hospede_nome: '', hospede_email: '', hospede_telefone: '',
   data_inicio: '', data_fim: '', valor_diaria: '',
   taxa_anfitriao_percentual: '10',
   status: 'reservada',
@@ -70,7 +72,7 @@ export default function TemporadaForm() {
       try {
         const [imovRes, cliRes, corRes] = await Promise.all([
           api.get('/imoveis'),
-          api.get('/clientes', { params: { tabela: 'comprador' } }),
+          api.get('/clientes'),
           api.get('/corretores'),
         ])
         setImoveis(imovRes.data)
@@ -84,6 +86,9 @@ export default function TemporadaForm() {
             cliente_id:               String(t.cliente_id  ?? ''),
             corretor_id:              String(t.corretor_id ?? ''),
             corretor_captador_id:     String(t.corretor_captador_id ?? ''),
+            hospede_nome:             t.hospede_nome     ?? '',
+            hospede_email:            t.hospede_email    ?? '',
+            hospede_telefone:         t.hospede_telefone ?? '',
             data_inicio:              t.data_inicio?.split('T')[0] ?? '',
             data_fim:                 t.data_fim?.split('T')[0]    ?? '',
             valor_diaria:             String(t.valor_diaria ?? ''),
@@ -98,6 +103,17 @@ export default function TemporadaForm() {
   }, [id])
 
   function set(k, v) { setForm(p => ({ ...p, [k]: v })) }
+
+  function handleCliente(clienteId) {
+    const c = clientes.find(x => String(x.id) === clienteId)
+    setForm(prev => ({
+      ...prev,
+      cliente_id:       clienteId,
+      hospede_nome:     c && !prev.hospede_nome     ? c.nome          : prev.hospede_nome,
+      hospede_email:    c && !prev.hospede_email    ? (c.email    || '') : prev.hospede_email,
+      hospede_telefone: c && !prev.hospede_telefone ? (c.telefone || '') : prev.hospede_telefone,
+    }))
+  }
 
   // Cálculos automáticos
   const noites = useMemo(() => {
@@ -225,14 +241,50 @@ export default function TemporadaForm() {
 
           {/* 2. Hóspede e responsável */}
           <SectionCard icon={Users} title="Hóspede e responsável" accent="#0891b2">
-            <Field label="Hóspede (cliente)">
+            <Field label="Hóspede (cliente cadastrado)">
               <InputIcon icon={Users} accent="#0891b2">
-                <select value={form.cliente_id} onChange={e => set('cliente_id', e.target.value)} className="input">
-                  <option value="">Selecione o hóspede</option>
+                <select value={form.cliente_id} onChange={e => handleCliente(e.target.value)} className="input">
+                  <option value="">Selecionar da base de clientes…</option>
                   {clientes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                 </select>
               </InputIcon>
+              <p className="text-xs text-gray-400 mt-1">Selecionar preenche os campos abaixo automaticamente</p>
             </Field>
+
+            <Field label="Nome do hóspede *">
+              <InputIcon icon={User} accent="#0891b2">
+                <input
+                  value={form.hospede_nome}
+                  onChange={e => set('hospede_nome', e.target.value)}
+                  required
+                  placeholder="Nome completo do hóspede"
+                  className="input"
+                />
+              </InputIcon>
+            </Field>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="E-mail do hóspede">
+                <InputIcon icon={Mail} accent="#0891b2">
+                  <input type="email"
+                    value={form.hospede_email}
+                    onChange={e => set('hospede_email', e.target.value)}
+                    placeholder="email@exemplo.com"
+                    className="input"
+                  />
+                </InputIcon>
+              </Field>
+              <Field label="Telefone do hóspede">
+                <InputIcon icon={Phone} accent="#0891b2">
+                  <input
+                    value={form.hospede_telefone}
+                    onChange={e => set('hospede_telefone', e.target.value)}
+                    placeholder="(11) 99999-0000"
+                    className="input"
+                  />
+                </InputIcon>
+              </Field>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <Field label="Corretor responsável">

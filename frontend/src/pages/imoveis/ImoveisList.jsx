@@ -27,6 +27,38 @@ const TIPO_LABELS = {
 const FINALIDADE_LABELS = { venda: 'Venda', locacao: 'Locação', temporada: 'Temporada' }
 const STATUS_LABELS = { disponivel: 'Disponível', alugado: 'Alugado', vendido: 'Vendido', inativo: 'Inativo' }
 
+const ESTADOS_NOME = {
+  AC:'Acre', AL:'Alagoas', AP:'Amapá', AM:'Amazonas', BA:'Bahia',
+  CE:'Ceará', DF:'Distrito Federal', ES:'Espírito Santo', GO:'Goiás',
+  MA:'Maranhão', MT:'Mato Grosso', MS:'Mato Grosso do Sul', MG:'Minas Gerais',
+  PA:'Pará', PB:'Paraíba', PR:'Paraná', PE:'Pernambuco', PI:'Piauí',
+  RJ:'Rio de Janeiro', RN:'Rio Grande do Norte', RS:'Rio Grande do Sul',
+  RO:'Rondônia', RR:'Roraima', SC:'Santa Catarina', SP:'São Paulo',
+  SE:'Sergipe', TO:'Tocantins',
+}
+const UFS = Object.keys(ESTADOS_NOME).sort()
+
+// Mapa nome completo sem acento → sigla (para aceitar "São Paulo" ou "sao paulo" → "SP")
+const NOME_PARA_UF = Object.fromEntries(
+  Object.entries(ESTADOS_NOME).map(([uf, nome]) => [
+    nome.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''),
+    uf,
+  ])
+)
+
+function sem(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+// Retorna sempre a sigla de 2 letras (SP) independente de como estado está salvo
+function toUF(estado) {
+  const raw = (estado || '').trim()
+  if (!raw) return ''
+  const upper = raw.toUpperCase()
+  if (upper.length === 2 && ESTADOS_NOME[upper]) return upper
+  return NOME_PARA_UF[sem(raw)] || upper
+}
+
 function moeda(v) {
   return v ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}` : '—'
 }
@@ -38,6 +70,7 @@ export default function ImoveisList() {
   const [filtroTipo, setFiltroTipo]         = useState('')
   const [filtroFinalidade, setFiltroFinalidade] = useState('')
   const [filtroStatus, setFiltroStatus]     = useState('')
+  const [filtroEstado, setFiltroEstado]     = useState('')
   const [busca, setBusca]                   = useState('')
   const [carregando, setCarregando]         = useState(true)
   const [erro, setErro]                     = useState('')
@@ -75,13 +108,33 @@ export default function ImoveisList() {
   }
 
   const imoveisFiltrados = imoveis.filter(im => {
-    if (!busca) return true
-    const t = busca.toLowerCase()
-    return (
-      im.titulo?.toLowerCase().includes(t) ||
-      im.cidade?.toString().toLowerCase().includes(t) ||
-      im.endereco?.toLowerCase().includes(t)
-    )
+    // Normaliza o estado salvo para sigla (trata "SP", "sp", "São Paulo", "sao paulo")
+    const ufIm = toUF(im.estado)
+
+    // Filtro de estado via dropdown
+    if (filtroEstado && ufIm !== filtroEstado) return false
+
+    // Busca textual
+    const t = sem(busca.trim())
+    if (!t) return true
+
+    // Campos texto direto
+    if (sem(im.titulo).includes(t))   return true
+    if (sem(im.cidade).includes(t))   return true
+    if (sem(im.endereco).includes(t)) return true
+    if (sem(im.bairro).includes(t))   return true
+
+    // Estado: sigla exata (SP, RJ) ou substring do nome completo (são paulo, rio)
+    const tUpper = busca.trim().toUpperCase()
+    const buscaEhUF = tUpper.length === 2 && Boolean(ESTADOS_NOME[tUpper])
+    if (buscaEhUF) {
+      if (ufIm === tUpper) return true
+    } else {
+      const nomeEstado = sem(ESTADOS_NOME[ufIm] || im.estado || '')
+      if (nomeEstado.includes(t)) return true
+    }
+
+    return false
   })
 
   return (
@@ -106,15 +159,21 @@ export default function ImoveisList() {
 
       {/* Filtros + Busca */}
       <div className="card p-4 mb-5 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[180px]">
+        <div className="relative flex-1 min-w-[200px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={busca}
             onChange={e => setBusca(e.target.value)}
-            placeholder="Buscar por título, cidade ou endereço…"
+            placeholder="Buscar por título, cidade, bairro, rua, UF (SP) ou estado…"
             className="w-full border border-gray-200 rounded-xl pl-8 pr-3 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 shadow-sm"
           />
         </div>
+        <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} className={SEL}>
+          <option value="">Todos os estados</option>
+          {UFS.map(uf => (
+            <option key={uf} value={uf}>{uf} — {ESTADOS_NOME[uf]}</option>
+          ))}
+        </select>
         <select value={filtroTipo} onChange={e => setFiltroTipo(e.target.value)} className={SEL}>
           <option value="">Todos os tipos</option>
           {TIPOS.map(t => <option key={t} value={t}>{TIPO_LABELS[t]}</option>)}
@@ -136,6 +195,15 @@ export default function ImoveisList() {
         </button>
       </div>
 
+      {/* Contador de resultados quando filtrado */}
+      {(busca || filtroEstado) && !carregando && (
+        <p className="text-xs text-gray-400 mb-3 px-1">
+          {imoveisFiltrados.length} resultado(s) encontrado(s)
+          {busca && <> para "<span className="font-medium text-gray-600">{busca}</span>"</>}
+          {filtroEstado && <> em <span className="font-medium text-gray-600">{filtroEstado} — {ESTADOS_NOME[filtroEstado]}</span></>}
+        </p>
+      )}
+
       {/* Conteúdo */}
       {carregando ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -149,11 +217,11 @@ export default function ImoveisList() {
         <div className="p-16 text-center">
           <Home size={40} className="text-gray-200 mx-auto mb-3" />
           <p className="text-gray-400 text-sm">
-            {busca || filtroTipo || filtroFinalidade || filtroStatus
+            {busca || filtroTipo || filtroFinalidade || filtroStatus || filtroEstado
               ? 'Nenhum imóvel encontrado para os filtros selecionados.'
               : 'Nenhum imóvel cadastrado.'}
           </p>
-          {podeEditar && !busca && (
+          {podeEditar && !busca && !filtroEstado && (
             <Link to="/imoveis/novo" className="text-blue-600 text-sm hover:underline mt-1 inline-block">
               Cadastrar o primeiro
             </Link>
@@ -234,18 +302,23 @@ export default function ImoveisList() {
                 {/* Características */}
                 {(im.quartos || im.area_total || im.garagens) && (
                   <div className="flex gap-3 text-xs text-gray-400 mb-2">
-                    {im.quartos  && <span className="flex items-center gap-1"><BedDouble size={12} />{im.quartos} qts</span>}
+                    {im.quartos    && <span className="flex items-center gap-1"><BedDouble size={12} />{im.quartos} qts</span>}
                     {im.area_total && <span className="flex items-center gap-1"><Maximize2 size={12} />{im.area_total} m²</span>}
-                    {im.garagens && <span className="flex items-center gap-1"><Car size={12} />{im.garagens} vg</span>}
+                    {im.garagens   && <span className="flex items-center gap-1"><Car size={12} />{im.garagens} vg</span>}
                   </div>
                 )}
 
-                {/* Endereço */}
-                {im.cidade && (
+                {/* Localização: bairro, cidade, estado */}
+                {(im.cidade || im.estado) && (
                   <p className="text-xs text-gray-400 flex items-center gap-1 mt-auto">
                     <MapPin size={12} className="shrink-0" />
-                    {im.endereco ? `${im.endereco} — ` : ''}{im.cidade}
+                    <span className="truncate">
+                      {[im.bairro, im.cidade, im.estado].filter(Boolean).join(', ')}
+                    </span>
                   </p>
+                )}
+                {im.endereco && (
+                  <p className="text-xs text-gray-300 truncate mt-0.5 pl-4">{im.endereco}</p>
                 )}
 
                 {/* Corretor + CRECI */}

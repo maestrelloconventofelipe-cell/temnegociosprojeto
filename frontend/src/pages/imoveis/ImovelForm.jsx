@@ -69,15 +69,18 @@ export default function ImovelForm() {
 
   const podeAtribuirCorretor = ['administrador_matriz','diretor_regional','franqueado'].includes(user?.role)
 
-  const { buscar: buscarCEP, buscando: buscandoCEP } = useBuscaCEP(({ logradouro, bairro: b, cidade, estado }) => {
-    setForm(prev => ({
-      ...prev,
-      endereco: logradouro || prev.endereco,
-      bairro:   b         || prev.bairro,
-      cidade:   cidade    || prev.cidade,
-      estado:   estado    || prev.estado,
-    }))
-  })
+  const { buscar: buscarCEP, buscando: buscandoCEP } = useBuscaCEP(
+    ({ logradouro, bairro: b, cidade, estado }) => {
+      setForm(prev => ({
+        ...prev,
+        endereco: logradouro || prev.endereco,
+        bairro:   b         || prev.bairro,
+        cidade:   cidade    || prev.cidade,
+        estado:   estado    || prev.estado,
+      }))
+    },
+    () => toast('CEP não encontrado. Verifique o número ou preencha o endereço manualmente.', 'warning')
+  )
 
   function handleCEP(valor) {
     const mascarado = maskCEP(valor)

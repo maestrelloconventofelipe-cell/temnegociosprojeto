@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export function useBuscaCEP(onPreenchido) {
+export function useBuscaCEP(onPreenchido, onNaoEncontrado) {
   const [buscando, setBuscando] = useState(false)
 
   async function buscar(cepMascarado) {
@@ -10,7 +10,9 @@ export function useBuscaCEP(onPreenchido) {
     try {
       const r = await fetch(`https://viacep.com.br/ws/${limpo}/json/`)
       const d = await r.json()
-      if (!d.erro) {
+      if (d.erro) {
+        onNaoEncontrado?.()
+      } else {
         onPreenchido({
           logradouro: d.logradouro || '',
           bairro:     d.bairro    || '',
@@ -18,7 +20,9 @@ export function useBuscaCEP(onPreenchido) {
           estado:     d.uf        || '',
         })
       }
-    } catch {}
+    } catch {
+      onNaoEncontrado?.()
+    }
     finally { setBuscando(false) }
   }
 
