@@ -68,19 +68,20 @@ async function esquecerSenha(req, res) {
   const MSG = { mensagem: 'Se o e-mail existir, você receberá as instruções em breve.' }
   try {
     const { rows } = await db.query(
-      'SELECT id, nome, email FROM usuarios WHERE email = $1 AND tenant_id = $2 AND ativo = true',
+      `SELECT id, nome, email FROM usuarios WHERE email = $1 AND tenant_id = $2 AND status = 'ativo'`,
       [email, Number(tenant_id)]
     )
     if (!rows.length) return res.json(MSG)
 
     const user  = rows[0]
     const token = crypto.randomBytes(32).toString('hex')
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
     const expira = new Date(Date.now() + 3600000)
 
     await db.query('DELETE FROM password_reset_tokens WHERE user_id = $1', [user.id])
     await db.query(
       'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1,$2,$3)',
-      [user.id, token, expira]
+      [user.id, tokenHash, expira]
     )
     await enviarResetSenha(user.email, user.nome, token)
     res.json(MSG)
@@ -99,14 +100,15 @@ async function resetarSenha(req, res) {
   }
 
   try {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex')
     const { rows } = await db.query(
       'SELECT * FROM password_reset_tokens WHERE token = $1 AND used = false AND expires_at > NOW()',
-      [token]
+      [tokenHash]
     )
     if (!rows.length) return res.status(400).json({ erro: 'Link inválido ou expirado.' })
 
     const reg  = rows[0]
-    const hash = await bcrypt.hash(nova_senha, 10)
+    const hash = await bcrypt.hash(nova_senha, 12)
 
     await db.query('UPDATE usuarios SET senha_hash = $1 WHERE id = $2', [hash, reg.user_id])
     await db.query('UPDATE password_reset_tokens SET used = true WHERE id = $1', [reg.id])

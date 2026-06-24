@@ -104,6 +104,9 @@ async function atualizar(req, res) {
 
 async function alterarStatus(req, res) {
   const { status } = req.body
+  if (!['ativa','bloqueada','suspensa','cancelada'].includes(status)) {
+    return res.status(400).json({ erro: 'Status inválido.' })
+  }
   try {
     const result = await db.query(
       'UPDATE tenants SET status=$1, updated_at=NOW() WHERE id=$2',

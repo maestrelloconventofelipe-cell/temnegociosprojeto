@@ -46,10 +46,11 @@ const path = require('path')
 const app = express();
 
 // Redirecionar HTTP → HTTPS em produção (quando atrás de proxy/load balancer)
-if (process.env.NODE_ENV === 'production') {
+// APP_HOST deve ser configurado explicitamente para evitar host-header injection
+if (process.env.NODE_ENV === 'production' && process.env.APP_HOST) {
   app.use((req, res, next) => {
     if (req.header('x-forwarded-proto') !== 'https') {
-      return res.redirect(301, `https://${req.header('host')}${req.url}`)
+      return res.redirect(301, `https://${process.env.APP_HOST}${req.url}`)
     }
     next()
   })

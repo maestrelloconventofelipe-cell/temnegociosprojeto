@@ -18,7 +18,7 @@ export default function ResetarSenha() {
 
   async function handleSubmit(e) {
     e.preventDefault(); setErro('')
-    if (novaSenha.length < 6) return setErro('A senha deve ter pelo menos 6 caracteres.')
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(novaSenha)) return setErro('A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.')
     if (novaSenha !== confirmar) return setErro('As senhas não coincidem.')
     setSalvando(true)
     try {
@@ -63,7 +63,7 @@ export default function ResetarSenha() {
               <div className="mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Nova senha</h2>
                 <p className="text-gray-400 text-sm mt-1">
-                  Escolha uma senha segura com pelo menos 6 caracteres.
+                  Escolha uma senha com pelo menos 12 caracteres, incluindo maiúscula, minúscula e número.
                 </p>
               </div>
 
@@ -71,7 +71,7 @@ export default function ResetarSenha() {
                 <div>
                   <label className="label">Nova senha</label>
                   <input type="password" value={novaSenha} onChange={e => setNovaSenha(e.target.value)}
-                    required placeholder="••••••••" minLength={6} className="input" />
+                    required placeholder="••••••••" minLength={12} className="input" />
                 </div>
 
                 <div>
@@ -130,9 +130,9 @@ export default function ResetarSenha() {
 
 function forca(senha) {
   let f = 0
-  if (senha.length >= 6)  f++
-  if (senha.length >= 10) f++
-  if (/[A-Z]/.test(senha) && /[0-9]/.test(senha)) f++
+  if (senha.length >= 12) f++
+  if (senha.length >= 16) f++
+  if (/[A-Z]/.test(senha) && /[a-z]/.test(senha) && /[0-9]/.test(senha)) f++
   if (/[^A-Za-z0-9]/.test(senha)) f++
   return f
 }

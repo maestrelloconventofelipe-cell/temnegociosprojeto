@@ -22,11 +22,13 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`)
   },
 })
+const ALLOWED_IMG_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp'])
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (/image\/(jpeg|jpg|png|webp)/i.test(file.mimetype)) cb(null, true)
+    const ext = path.extname(file.originalname).toLowerCase()
+    if (/image\/(jpeg|jpg|png|webp)/i.test(file.mimetype) && ALLOWED_IMG_EXT.has(ext)) cb(null, true)
     else cb(new Error('Apenas imagens JPG, PNG ou WEBP são permitidas.'))
   },
 })

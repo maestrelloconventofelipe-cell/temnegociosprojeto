@@ -317,7 +317,7 @@ export default function DocumentosList() {
 
                   {/* Ações */}
                   <div className="flex items-center gap-2 shrink-0">
-                    <a href={`/uploads/documentos/${doc.arquivo}`} target="_blank" rel="noreferrer"
+                    <a href={doc.url} target="_blank" rel="noreferrer"
                       className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-blue-600 hover:bg-blue-50 hover:border-blue-200 transition-colors" title="Baixar">
                       <Download size={14} />
                     </a>

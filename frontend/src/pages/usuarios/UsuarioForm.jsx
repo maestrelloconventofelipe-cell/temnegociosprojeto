@@ -98,7 +98,7 @@ export default function UsuarioForm() {
     e.preventDefault(); setErro('')
     if (!isEdit && !form.senha)            return setErro('Senha é obrigatória para novo usuário.')
     if (form.senha && form.senha !== form.confirmar_senha) return setErro('As senhas não coincidem.')
-    if (form.senha && form.senha.length < 6) return setErro('A senha deve ter pelo menos 6 caracteres.')
+    if (form.senha && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(form.senha)) return setErro('A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.')
 
     setSalvando(true)
     try {

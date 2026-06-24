@@ -3,7 +3,9 @@ const { Pool } = require('pg')
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  // rejectUnauthorized: true em produção — valida o certificado TLS do Supabase.
+  // Em dev pode ficar false se o CA não estiver configurado localmente.
+  ssl: { rejectUnauthorized: process.env.NODE_ENV === 'production' },
 
   // Supabase Session Pooler (porta 5432) tem ~5 min de idle timeout server-side.
   // keepAlive + idleTimeoutMillis curto evitam "conexões zumbi" que causam erros intermitentes.

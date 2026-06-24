@@ -37,11 +37,21 @@ async function buscar(req, res) {
   }
 }
 
+const ROLES_POR_PERFIL = {
+  administrador_matriz: ['administrador_matriz','diretor_regional','franqueado','corretor','captador','financeiro','juridico','funcionario_administrativo','auditor_rede'],
+  diretor_regional:     ['franqueado','corretor','captador','financeiro','juridico','funcionario_administrativo'],
+  franqueado:           ['corretor','captador','financeiro','juridico','funcionario_administrativo'],
+}
+
 async function criar(req, res) {
   const tenantId = req.tenant.id
   const { nome, email, senha, role, telefone, creci, ativo = true } = req.body
   if (!nome || !email || !senha || !role) {
     return res.status(400).json({ erro: 'Nome, email, senha e função são obrigatórios.' })
+  }
+  const rolesPermitidos = ROLES_POR_PERFIL[req.user.role] || []
+  if (!rolesPermitidos.includes(role)) {
+    return res.status(403).json({ erro: 'Você não tem permissão para atribuir este perfil.' })
   }
   if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(senha)) {
     return res.status(400).json({ erro: 'A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.' })
@@ -52,7 +62,7 @@ async function criar(req, res) {
     )
     if (dup.length) return res.status(409).json({ erro: 'E-mail já cadastrado nesta franquia.' })
 
-    const hash   = await bcrypt.hash(senha, 10)
+    const hash   = await bcrypt.hash(senha, 12)
     const statusV = ativo ? 'ativo' : 'inativo'
     const { rows } = await db.query(
       `INSERT INTO usuarios (tenant_id, nome, email, senha_hash, perfil, telefone, creci, status)
@@ -92,7 +102,14 @@ async function atualizar(req, res) {
     const sets = []; const p = []
     if (nome     !== undefined) { sets.push(`nome=$${p.length+1}`);     p.push(nome) }
     if (email    !== undefined) { sets.push(`email=$${p.length+1}`);    p.push(email) }
-    if (role     !== undefined) { sets.push(`perfil=$${p.length+1}`);   p.push(role) }
+    if (role     !== undefined) {
+      const rolesPermitidos = ROLES_POR_PERFIL[req.user.role] || []
+      if (!rolesPermitidos.includes(role)) {
+        return res.status(403).json({ erro: 'Você não tem permissão para atribuir este perfil.' })
+      }
+      sets.push(`perfil=$${p.length+1}`)
+      p.push(role)
+    }
     if (telefone !== undefined) { sets.push(`telefone=$${p.length+1}`); p.push(telefone||null) }
     if (creci    !== undefined) { sets.push(`creci=$${p.length+1}`);    p.push(creci||null) }
     if (ativo    !== undefined) { sets.push(`status=$${p.length+1}`);   p.push(ativo ? 'ativo' : 'inativo') }
@@ -100,7 +117,7 @@ async function atualizar(req, res) {
       if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(senha)) {
         return res.status(400).json({ erro: 'A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.' })
       }
-      const hash = await bcrypt.hash(senha, 10)
+      const hash = await bcrypt.hash(senha, 12)
       sets.push(`senha_hash=$${p.length+1}`)
       p.push(hash)
     }
@@ -160,7 +177,7 @@ async function alterarSenha(req, res) {
     if (!rows.length) return res.status(404).json({ erro: 'Usuário não encontrado.' })
     const ok = await bcrypt.compare(senha_atual, rows[0].senha_hash)
     if (!ok) return res.status(401).json({ erro: 'Senha atual incorreta.' })
-    const hash = await bcrypt.hash(nova_senha, 10)
+    const hash = await bcrypt.hash(nova_senha, 12)
     await db.query('UPDATE usuarios SET senha_hash=$1 WHERE id=$2', [hash, user_id])
     res.json({ mensagem: 'Senha alterada com sucesso.' })
   } catch {

@@ -66,11 +66,14 @@ async function marcarTodasLidas(req, res) {
 
 async function remover(req, res) {
   const { user } = req
+  const GESTORES = ['administrador_matriz', 'diretor_regional', 'franqueado']
   try {
-    await db.query(
-      'DELETE FROM notificacoes WHERE id = $1 AND tenant_id = $2',
-      [req.params.id, user.tenant_id]
-    )
+    const isGestor = GESTORES.includes(user.role)
+    const sql = isGestor
+      ? 'DELETE FROM notificacoes WHERE id = $1 AND tenant_id = $2'
+      : 'DELETE FROM notificacoes WHERE id = $1 AND tenant_id = $2 AND usuario_id = $3'
+    const params = isGestor ? [req.params.id, user.tenant_id] : [req.params.id, user.tenant_id, user.user_id]
+    await db.query(sql, params)
     res.json({ ok: true })
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao remover notificação.' })

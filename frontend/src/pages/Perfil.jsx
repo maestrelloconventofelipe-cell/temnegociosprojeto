@@ -36,7 +36,7 @@ export default function Perfil() {
   async function alterarSenha(e) {
     e.preventDefault()
     if (novaSenha !== confirmSenha) { toast.error('Senhas não conferem.'); return }
-    if (novaSenha.length < 6) { toast.error('Senha deve ter pelo menos 6 caracteres.'); return }
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(novaSenha)) { toast.error('A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.'); return }
     setSaving(true)
     try {
       await api.put('/usuarios/senha', { senha_atual: senhaAtual, nova_senha: novaSenha })
@@ -120,12 +120,12 @@ export default function Perfil() {
                 </div>
                 <div className="col-md-6">
                   <label className="form-label small fw-bold text-muted">NOVA SENHA</label>
-                  <input className="form-control rounded-3" type="password" required minLength={6}
+                  <input className="form-control rounded-3" type="password" required minLength={12}
                     value={novaSenha} onChange={e => setNovaSen(e.target.value)} />
                 </div>
                 <div className="col-md-6">
                   <label className="form-label small fw-bold text-muted">CONFIRMAR NOVA SENHA</label>
-                  <input className="form-control rounded-3" type="password" required minLength={6}
+                  <input className="form-control rounded-3" type="password" required minLength={12}
                     value={confirmSenha} onChange={e => setConf(e.target.value)} />
                 </div>
                 <div className="col-12">
