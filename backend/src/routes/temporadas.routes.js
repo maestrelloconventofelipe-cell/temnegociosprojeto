@@ -11,8 +11,9 @@ function podeOperar(req, res, next) {
 
 router.use(verificarJWT, verificarTenant)
 
-router.get('/',       ctrl.listar)
-router.get('/:id',    ctrl.buscar)
+router.get('/',         ctrl.listar)
+router.get('/resumo',   ctrl.resumo)
+router.get('/:id',      ctrl.buscar)
 router.post('/',      podeOperar, ctrl.criar)
 router.put('/:id',    podeOperar, ctrl.atualizar)
 router.delete('/:id', podeOperar, ctrl.remover)

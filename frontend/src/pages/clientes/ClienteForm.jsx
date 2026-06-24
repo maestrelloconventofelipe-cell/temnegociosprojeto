@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../../api/client'
 import { useToast } from '../../contexts/ToastContext'
-import AppLayout from '../../layouts/AppLayout'
 import { maskCPF, maskCNPJ, maskTelefone, maskCEP } from '../../utils/masks'
 import { useBuscaCEP } from '../../hooks/useBuscaCEP'
 import {
@@ -144,16 +143,13 @@ export default function ClienteForm() {
   const carregandoEndereco = buscandoCEP || buscandoCNPJ
 
   if (carregando) return (
-    <AppLayout>
-      <div className="space-y-4 max-w-xl">
-        {[1,2].map(i => <div key={i} className="skeleton h-48 rounded-2xl" />)}
-      </div>
-    </AppLayout>
+    <div className="space-y-4 max-w-xl">
+      {[1,2].map(i => <div key={i} className="skeleton h-48 rounded-2xl" />)}
+    </div>
   )
 
   return (
-    <AppLayout>
-      <div className="max-w-xl">
+    <div className="max-w-xl">
 
         {/* Cabeçalho */}
         <div className="flex items-center gap-4 mb-6 animate-fade-up">
@@ -303,6 +299,5 @@ export default function ClienteForm() {
           </div>
         </form>
       </div>
-    </AppLayout>
   )
 }

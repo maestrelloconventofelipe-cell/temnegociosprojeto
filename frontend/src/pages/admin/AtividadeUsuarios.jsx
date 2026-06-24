@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import api from '../../api/client'
-import AppLayout from '../../layouts/AppLayout'
 import { Activity, RefreshCw, Circle, BadgeCheck } from 'lucide-react'
 
 const ROLE_LABELS = {
@@ -72,7 +71,7 @@ export default function AtividadeUsuarios() {
   }).length
 
   return (
-    <AppLayout>
+    <>
       {/* Cabeçalho */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -183,6 +182,6 @@ export default function AtividadeUsuarios() {
           </div>
         </div>
       )}
-    </AppLayout>
+    </>
   )
 }

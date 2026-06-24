@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../api/client'
-import AppLayout from '../../layouts/AppLayout'
 import {
   Palmtree, ChevronLeft, Save,
   Home, CalendarRange, Users, Percent,
@@ -137,16 +136,13 @@ export default function TemporadaForm() {
   }
 
   if (carregando) return (
-    <AppLayout>
-      <div className="space-y-4 max-w-2xl">
-        {[1,2,3,4].map(i => <div key={i} className="skeleton h-48 rounded-2xl" />)}
-      </div>
-    </AppLayout>
+    <div className="space-y-4 max-w-2xl">
+      {[1,2,3,4].map(i => <div key={i} className="skeleton h-48 rounded-2xl" />)}
+    </div>
   )
 
   return (
-    <AppLayout>
-      <div className="max-w-2xl">
+    <div className="max-w-2xl">
 
         {/* Cabeçalho */}
         <div className="flex items-center gap-3 mb-6">
@@ -336,6 +332,5 @@ export default function TemporadaForm() {
 
         </form>
       </div>
-    </AppLayout>
   )
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '../../contexts/ToastContext'
 import api from '../../api/client'
-import AppLayout from '../../layouts/AppLayout'
 import {
   ReceiptText, RefreshCw, CheckCircle2, Sparkles,
   AlertTriangle, X, CalendarDays,
@@ -106,7 +105,7 @@ export default function RoyaltiesList() {
   ] : []
 
   return (
-    <AppLayout>
+    <>
 
       {/* Modal gerar royalties */}
       {modalGerar && (
@@ -315,6 +314,6 @@ export default function RoyaltiesList() {
           </div>
         )}
       </div>
-    </AppLayout>
+    </>
   )
 }

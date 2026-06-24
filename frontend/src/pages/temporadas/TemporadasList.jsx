@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useConfirm } from '../../contexts/ConfirmContext'
 import api from '../../api/client'
-import AppLayout from '../../layouts/AppLayout'
 import {
   Palmtree, RefreshCw, CalendarRange,
   Users, UserCheck, Moon, AlertCircle,
@@ -91,7 +90,7 @@ export default function TemporadasList() {
   ] : []
 
   return (
-    <AppLayout>
+    <>
       {/* Cabeçalho */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -274,6 +273,6 @@ export default function TemporadasList() {
           </div>
         )}
       </div>
-    </AppLayout>
+    </>
   )
 }

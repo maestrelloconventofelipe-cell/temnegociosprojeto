@@ -62,7 +62,10 @@ async function criar(req, res) {
   const endFinal  = endereco || logradouro || null
   const estFinal  = estado   || uf         || null
 
-  const finalidadeNorm = (finalidade || 'venda').toLowerCase().replace('locação','locacao').replace('aluguel','locacao')
+  const finalidadeNorm = (finalidade || 'venda').toLowerCase()
+    .replace('locação','locacao').replace('aluguel','locacao').replace('aluguel','locacao')
+  const tipoNorm = (tipo || 'casa').toLowerCase()
+    .replace('sítio','sitio').replace('sitio','sitio').replace('cobertura','cobertura')
 
   try {
     const { rows } = await db.query(
@@ -74,7 +77,7 @@ async function criar(req, res) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
        RETURNING id`,
       [
-        tenantId, titulo, tipo||null, finalidadeNorm,
+        tenantId, titulo, tipoNorm||null, finalidadeNorm,
         valor||null, valor_negociacao||null,
         area_total||null, area_util||null,
         quartos||null, banheiros||null, vagas||null,
@@ -124,6 +127,7 @@ async function atualizar(req, res) {
     const endFinal  = endereco || logradouro || null
     const estFinal  = estado   || uf         || null
     const finNorm   = finalidade ? finalidade.toLowerCase().replace('locação','locacao').replace('aluguel','locacao') : 'venda'
+    const tipoUp    = tipo ? tipo.toLowerCase().replace('sítio','sitio') : null
 
     const result = await db.query(
       `UPDATE imoveis SET
@@ -134,7 +138,7 @@ async function atualizar(req, res) {
         corretor_id=$21, captador_id=$22, updated_at=NOW()
        WHERE id=$23 AND tenant_id=$24`,
       [
-        titulo, tipo||null, finNorm,
+        titulo, tipoUp||null, finNorm,
         valor||null, valor_negociacao||null,
         area_total||null, area_util||null,
         quartos||null, banheiros||null, vagas||null,
