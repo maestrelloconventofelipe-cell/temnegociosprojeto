@@ -42,7 +42,6 @@ async function buscar(req, res) {
 
 async function criar(req, res) {
   const tenantId = req.tenant.id
-  const { user_id } = req.user
   const {
     tipo, categoria, descricao, valor,
     data_competencia, data_vencimento, data_pagamento,
@@ -53,18 +52,21 @@ async function criar(req, res) {
     return res.status(400).json({ erro: 'Tipo, valor e descrição são obrigatórios.' })
   }
 
+  const hoje = new Date().toISOString().slice(0, 10)
+  const statusVal = status_pagamento || 'pendente'
+
   try {
     const { rows } = await db.query(
       `INSERT INTO financeiro
         (tenant_id, tipo, categoria, descricao, valor,
          data_competencia, data_vencimento, data_pagamento,
-         status_pagamento, observacoes, usuario_id)
+         status, status_pagamento, observacoes)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING id`,
       [
-        tenantId, tipo, categoria||null, descricao, valor,
-        data_competencia||null, data_vencimento||null, data_pagamento||null,
-        status_pagamento||'pendente', observacoes||null, user_id,
+        tenantId, tipo, categoria || 'outro', descricao, valor,
+        data_competencia || hoje, data_vencimento || hoje, data_pagamento || null,
+        statusVal, statusVal, observacoes || null,
       ]
     )
     res.status(201).json({ id: rows[0].id })
@@ -82,17 +84,20 @@ async function atualizar(req, res) {
     status_pagamento, observacoes,
   } = req.body
 
+  const hoje = new Date().toISOString().slice(0, 10)
+  const statusVal = status_pagamento || 'pendente'
+
   try {
     const result = await db.query(
       `UPDATE financeiro SET
         tipo=$1, categoria=$2, descricao=$3, valor=$4,
         data_competencia=$5, data_vencimento=$6, data_pagamento=$7,
-        status_pagamento=$8, observacoes=$9
+        status=$8, status_pagamento=$8, observacoes=$9
        WHERE id=$10 AND tenant_id=$11`,
       [
-        tipo, categoria||null, descricao, valor,
-        data_competencia||null, data_vencimento||null, data_pagamento||null,
-        status_pagamento||'pendente', observacoes||null,
+        tipo, categoria || 'outro', descricao, valor,
+        data_competencia || hoje, data_vencimento || hoje, data_pagamento || null,
+        statusVal, observacoes || null,
         req.params.id, tenantId,
       ]
     )
@@ -109,7 +114,7 @@ async function pagar(req, res) {
   const { data_pagamento } = req.body
   try {
     const result = await db.query(
-      `UPDATE financeiro SET status_pagamento='pago', data_pagamento=$1 WHERE id=$2 AND tenant_id=$3`,
+      `UPDATE financeiro SET status='pago', status_pagamento='pago', data_pagamento=$1 WHERE id=$2 AND tenant_id=$3`,
       [data_pagamento || new Date().toISOString().slice(0,10), req.params.id, tenantId]
     )
     if (result.rowCount === 0) return res.status(404).json({ erro: 'Lançamento não encontrado.' })

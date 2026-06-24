@@ -23,6 +23,11 @@ const VAZIO = {
 }
 
 function moeda(v) { return `R$ ${Number(v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` }
+function dataBr(d) {
+  if (!d) return '—'
+  const s = typeof d === 'string' ? d : d.toISOString()
+  return new Date(s.slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR')
+}
 
 export default function Financeiro() {
   const { user } = useAuth()
@@ -215,9 +220,7 @@ export default function Financeiro() {
                     <td className={`fw-bold ${l.tipo === 'receita' ? 'text-success' : 'text-danger'}`}>
                       {moeda(l.valor)}
                     </td>
-                    <td style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                      {l.data_vencimento ? new Date(l.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}
-                    </td>
+                    <td style={{ fontSize: '0.78rem', color: '#64748b' }}>{dataBr(l.data_vencimento)}</td>
                     <td>
                       <span className={`badge bg-${STATUS_COR[l.status_pagamento] ?? 'secondary'} rounded-pill`}>
                         {STATUS_LABEL[l.status_pagamento]}
