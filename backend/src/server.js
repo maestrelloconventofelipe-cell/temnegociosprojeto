@@ -4,6 +4,21 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
+// ─── Validação de segredos obrigatórios na inicialização ─────────────────────
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('[FATAL] JWT_SECRET ausente ou inseguro (mínimo 32 caracteres). Configure o .env')
+  process.exit(1)
+}
+if (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 64) {
+  console.error('[FATAL] ENCRYPTION_KEY ausente ou insegura (deve ter 64 chars hex). Configure o .env')
+  process.exit(1)
+}
+if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+  console.error('[FATAL] FRONTEND_URL deve ser definido em produção.')
+  process.exit(1)
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const authRoutes      = require('./routes/auth.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const tenantsRoutes   = require('./routes/tenants.routes');
@@ -30,16 +45,48 @@ const notificacoesRoutes   = require('./routes/notificacoes.routes');
 const path = require('path')
 const app = express();
 
-// Segurança: cabeçalhos HTTP defensivos
+// Redirecionar HTTP → HTTPS em produção (quando atrás de proxy/load balancer)
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      return res.redirect(301, `https://${req.header('host')}${req.url}`)
+    }
+    next()
+  })
+}
+
+// Cabeçalhos HTTP defensivos com CSP habilitado
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'same-site' },
-  contentSecurityPolicy: false, // frontend separado (Vite), CSP gerenciado pelo próprio Vite
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'"],
+      styleSrc:   ["'self'", "'unsafe-inline'"],
+      imgSrc:     ["'self'", 'data:', 'blob:'],
+      connectSrc: ["'self'"],
+      fontSrc:    ["'self'", 'data:'],
+      objectSrc:  ["'none'"],
+      frameSrc:   ["'none'"],
+    },
+  },
 }));
 
-// Segurança: limite de requisições para evitar brute force no login
+// Rate limiting global (previne abuso de todos os endpoints)
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { erro: 'Muitas requisições. Tente novamente em instantes.' },
+  skip: (req) => req.path === '/api/v1/health',
+})
+app.use(globalLimiter)
+
+// Rate limiting específico para autenticação (brute-force)
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // janela de 15 minutos
-  max: 20,                   // máx. 20 tentativas por IP a cada 15 min
+  windowMs: 15 * 60 * 1000,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { erro: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
@@ -47,7 +94,9 @@ const loginLimiter = rateLimit({
 
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json({ limit: '2mb' }));
-app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
+// Servir uploads de imóveis publicamente (fotos de listagem)
+// Uploads de documentos são servidos via endpoint autenticado em /api/v1/documentos/arquivo/:filename
+app.use('/uploads/imoveis', express.static(path.join(__dirname, '../../public/uploads/imoveis')));
 
 app.use('/api/v1/auth',      loginLimiter, authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);

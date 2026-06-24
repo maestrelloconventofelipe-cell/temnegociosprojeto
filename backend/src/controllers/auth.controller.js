@@ -93,7 +93,10 @@ async function esquecerSenha(req, res) {
 async function resetarSenha(req, res) {
   const { token, nova_senha } = req.body
   if (!token || !nova_senha) return res.status(400).json({ erro: 'Token e nova senha são obrigatórios.' })
-  if (nova_senha.length < 6) return res.status(400).json({ erro: 'A senha deve ter pelo menos 6 caracteres.' })
+  // Mínimo 12 chars com maiúscula, minúscula e número
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(nova_senha)) {
+    return res.status(400).json({ erro: 'A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.' })
+  }
 
   try {
     const { rows } = await db.query(

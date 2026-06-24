@@ -1,6 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') })
 const db     = require('../src/config/db')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
 
 async function main() {
   console.log('Conectando ao banco...')
@@ -42,32 +43,35 @@ async function main() {
   // ──────────────────────────────────────────────────────────────
   // 2. Verificar / criar usuário administrador_matriz
   // ──────────────────────────────────────────────────────────────
-  const EMAIL_ADMIN = 'admin@temnegociosimob.com.br'
-  const SENHA_ADMIN = 'Admin@2025'
+  const EMAIL_ADMIN = process.env.ADMIN_EMAIL || 'admin@temnegociosimob.com.br'
 
   const { rows: admins } = await db.query(
-    "SELECT id, email, role FROM usuarios WHERE role = 'administrador_matriz' LIMIT 5"
+    "SELECT id, email, perfil AS role FROM usuarios WHERE perfil = 'administrador_matriz' LIMIT 5"
   )
   console.log('Admins existentes:', admins)
 
   if (admins.length === 0) {
-    const hash = await bcrypt.hash(SENHA_ADMIN, 10)
+    // Gera senha aleatória segura — exibida UMA vez no console
+    const senha = (process.env.ADMIN_SEED_PASSWORD || (
+      crypto.randomBytes(12).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12) + 'Aa1!'
+    ))
+    const hash = await bcrypt.hash(senha, 10)
     const { rows } = await db.query(`
-      INSERT INTO usuarios (tenant_id, nome, email, senha_hash, role, ativo)
-      VALUES (1, 'Administrador Matriz', $1, $2, 'administrador_matriz', true)
+      INSERT INTO usuarios (tenant_id, nome, email, senha_hash, perfil, status)
+      VALUES (1, 'Administrador Matriz', $1, $2, 'administrador_matriz', 'ativo')
       ON CONFLICT (email, tenant_id) DO UPDATE
-        SET senha_hash=$2, ativo=true, role='administrador_matriz'
+        SET senha_hash=$2, status='ativo', perfil='administrador_matriz'
       RETURNING id, email
     `, [EMAIL_ADMIN, hash])
     console.log('Admin criado:', rows[0])
+    console.log('\n╔══════════════════════════════════════════════╗')
+    console.log(`║  📧 Login : ${EMAIL_ADMIN}`)
+    console.log(`║  🔑 Senha : ${senha}`)
+    console.log('║  ⚠️  Guarde esta senha — não será exibida novamente!')
+    console.log('╚══════════════════════════════════════════════╝\n')
   } else {
-    // Atualizar senha do primeiro admin encontrado para garantir acesso
-    const hash = await bcrypt.hash(SENHA_ADMIN, 10)
-    await db.query(
-      'UPDATE usuarios SET senha_hash=$1, ativo=true WHERE id=$2',
-      [hash, admins[0].id]
-    )
-    console.log(`Senha do admin "${admins[0].email}" redefinida para: ${SENHA_ADMIN}`)
+    console.log(`ℹ️  Admin "${admins[0].email}" já existe. Senha não alterada.`)
+    console.log('   Para redefinir a senha, use a funcionalidade de reset no sistema.')
   }
 
   // ──────────────────────────────────────────────────────────────
@@ -101,13 +105,11 @@ async function main() {
   console.log('\n=== TENANTS FINAIS ===')
   console.table(tenantsFinal)
 
-  const { rows: users } = await db.query('SELECT id, email, role, tenant_id, ativo FROM usuarios ORDER BY id')
+  const { rows: users } = await db.query('SELECT id, email, perfil, tenant_id, status FROM usuarios ORDER BY id')
   console.log('\n=== USUÁRIOS ===')
   console.table(users)
 
   console.log('\n✅ Seed concluído!')
-  console.log(`📧 Login: ${EMAIL_ADMIN}`)
-  console.log(`🔑 Senha: ${SENHA_ADMIN}`)
   console.log('🏙️  Franquia: Tem Negócios - Tupã')
 
   await db.end?.()

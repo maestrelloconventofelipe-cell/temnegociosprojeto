@@ -43,6 +43,9 @@ async function criar(req, res) {
   if (!nome || !email || !senha || !role) {
     return res.status(400).json({ erro: 'Nome, email, senha e função são obrigatórios.' })
   }
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(senha)) {
+    return res.status(400).json({ erro: 'A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.' })
+  }
   try {
     const { rows: dup } = await db.query(
       'SELECT id FROM usuarios WHERE tenant_id=$1 AND email=$2', [tenantId, email]
@@ -94,6 +97,9 @@ async function atualizar(req, res) {
     if (creci    !== undefined) { sets.push(`creci=$${p.length+1}`);    p.push(creci||null) }
     if (ativo    !== undefined) { sets.push(`status=$${p.length+1}`);   p.push(ativo ? 'ativo' : 'inativo') }
     if (senha) {
+      if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(senha)) {
+        return res.status(400).json({ erro: 'A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.' })
+      }
       const hash = await bcrypt.hash(senha, 10)
       sets.push(`senha_hash=$${p.length+1}`)
       p.push(hash)
@@ -146,7 +152,9 @@ async function alterarSenha(req, res) {
   const { user_id } = req.user
   const { senha_atual, nova_senha } = req.body
   if (!senha_atual || !nova_senha) return res.status(400).json({ erro: 'Campos obrigatórios.' })
-  if (nova_senha.length < 6) return res.status(400).json({ erro: 'Mínimo 6 caracteres.' })
+  if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/.test(nova_senha)) {
+    return res.status(400).json({ erro: 'A senha deve ter pelo menos 12 caracteres, incluindo maiúsculas, minúsculas e números.' })
+  }
   try {
     const { rows } = await db.query('SELECT senha_hash FROM usuarios WHERE id=$1', [user_id])
     if (!rows.length) return res.status(404).json({ erro: 'Usuário não encontrado.' })
