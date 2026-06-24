@@ -6,7 +6,8 @@ async function listar(req, res) {
   const { status } = req.query
 
   let sql = `
-    SELECT c.*, u.nome AS corretor_nome, i.titulo AS imovel_titulo
+    SELECT c.*, c.valor AS valor_comissao,
+           u.nome AS corretor_nome, i.titulo AS imovel_titulo
     FROM comissoes c
     LEFT JOIN usuarios u ON c.corretor_id = u.id
     LEFT JOIN imoveis i ON c.imovel_id = i.id
@@ -31,7 +32,8 @@ async function buscar(req, res) {
   const tenantId = req.tenant.id
   try {
     const { rows } = await db.query(
-      `SELECT c.*, u.nome AS corretor_nome, i.titulo AS imovel_titulo
+      `SELECT c.*, c.valor AS valor_comissao,
+              u.nome AS corretor_nome, i.titulo AS imovel_titulo
        FROM comissoes c
        LEFT JOIN usuarios u ON c.corretor_id = u.id
        LEFT JOIN imoveis i ON c.imovel_id = i.id
@@ -53,21 +55,23 @@ async function criar(req, res) {
     data_competencia, status, observacoes,
   } = req.body
   if (!corretor_id) return res.status(400).json({ erro: 'Corretor é obrigatório.' })
-  try {
-    const valComissao = valor_comissao || (percentual && valor_negocio
-      ? (parseFloat(percentual) / 100 * parseFloat(valor_negocio)).toFixed(2)
-      : null)
 
+  const valComissao = valor_comissao || (percentual && valor_negocio
+    ? (parseFloat(percentual) / 100 * parseFloat(valor_negocio)).toFixed(2)
+    : null)
+  if (!valComissao) return res.status(400).json({ erro: 'Informe o valor da comissão ou percentual + valor do negócio.' })
+
+  try {
     const { rows } = await db.query(
       `INSERT INTO comissoes
         (tenant_id, corretor_id, imovel_id, contrato_id, tipo,
-         valor_negocio, percentual, valor_comissao,
+         valor_negocio, percentual, valor,
          data_competencia, status, observacoes)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING id`,
       [
         tenantId, corretor_id, imovel_id||null, contrato_id||null, tipo||'venda',
-        valor_negocio||null, percentual||null, valComissao||null,
+        valor_negocio||null, percentual||null, valComissao,
         data_competencia||null, status||'pendente', observacoes||null,
       ]
     )
@@ -85,16 +89,20 @@ async function atualizar(req, res) {
     valor_negocio, percentual, valor_comissao,
     data_competencia, status, observacoes,
   } = req.body
+  const valComissao = valor_comissao || (percentual && valor_negocio
+    ? (parseFloat(percentual) / 100 * parseFloat(valor_negocio)).toFixed(2)
+    : null)
+
   try {
     const result = await db.query(
       `UPDATE comissoes SET
         corretor_id=$1, imovel_id=$2, contrato_id=$3, tipo=$4,
-        valor_negocio=$5, percentual=$6, valor_comissao=$7,
+        valor_negocio=$5, percentual=$6, valor=$7,
         data_competencia=$8, status=$9, observacoes=$10
        WHERE id=$11 AND tenant_id=$12`,
       [
         corretor_id, imovel_id||null, contrato_id||null, tipo||'venda',
-        valor_negocio||null, percentual||null, valor_comissao||null,
+        valor_negocio||null, percentual||null, valComissao||null,
         data_competencia||null, status||'pendente', observacoes||null,
         req.params.id, tenantId,
       ]
